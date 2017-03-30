@@ -49,6 +49,10 @@ class AsyncHttpConnection(Connection):
     :param str|tuple http_auth: optional http auth information as either a
       colon delimited string ``("username:password")`` or
       tuple ``(username, password)``
+    :param ssl.SSLContext ssl_options: An SSL context for passing advanced
+      SSL options to the client, e.g., alternative CA root certificates,
+      client certificates, etc. The function ssl.create_default_context()
+      can be used to construct SSLContext objects.
     :param int request_timeout: optional default timeout in seconds
     :arg use_ssl: use ssl for the connection if ``True``
 
@@ -59,7 +63,8 @@ class AsyncHttpConnection(Connection):
     ssl_transport_schema = 'https'
 
     def __init__(self, host='localhost', port=9200, http_auth=None,
-                 use_ssl=False, request_timeout=None, max_clients=10, **kwargs):
+                 use_ssl=False, request_timeout=None, max_clients=10,
+                 ssl_options=None, **kwargs):
         super(AsyncHttpConnection, self).__init__(host=host, port=port,
                                                   **kwargs)
         self._assign_auth_values(http_auth)
@@ -71,6 +76,7 @@ class AsyncHttpConnection(Connection):
         self._headers = {'Content-Type': 'application/json; charset=UTF-8'}
         self._start_time = None
         self.request_timeout = request_timeout
+        self.ssl_options = ssl_options
 
     @concurrent.return_future
     def perform_request(self, method, url, params=None, body=None,
@@ -133,6 +139,8 @@ class AsyncHttpConnection(Connection):
             kwargs['body'] = body
         if timeout:
             kwargs['request_timeout'] = timeout
+        if self.ssl_options:
+            kwargs['ssl_options'] = self.ssl_options
 
         kwargs['allow_nonstandard_methods'] = True
         return kwargs
